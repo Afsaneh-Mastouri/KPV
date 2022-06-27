@@ -5,8 +5,8 @@ The code for Proxy Maximum Moment Restriction (PMMR), the second method proposed
 #How to run the code?
 To run the code you need to:
 1) copy/download main + utils + cal_alpha 
-2) Add path/address of True_Caual_Effect.npz to load do_cal at line # of main.py
-3) Add path/address of Data_Sample.npz to load samples at line # of main.py
+2) Add path/address of True_Caual_Effect.npz to load #do_cal at line #66 of main.py
+3) Add path/address of Data_Sample.npz to load samples at line #71 of main.py
 
 
 
