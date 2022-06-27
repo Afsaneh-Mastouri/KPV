@@ -23,7 +23,7 @@ for f in glob.glob('*.p'):
         results_df=pd.concat([results_df,df],axis=1)
         
         
-results_index=df_index#results_df.loc[:,~results_df.columns.duplicated()]
+results_index=df_index
 results_df=results_df.drop(['do_A'],axis=1)
 mean=results_df.mean(axis=1)
 std=results_df.var(axis=1)
@@ -33,7 +33,7 @@ results_summary=pd.concat([results_index,mean,std,m_ps,m_ns],axis=1)
 results_summary.columns=['do_A','Ew_Haw','std','ub','lb' ]
   
 
-do_cal = np.load('/Users/afsaneh/Documents/UCL/Thesis/KPV/AG/Final/Final/do_A_seed1009_std.npz')          
+do_cal = np.load('~/do_A_seed1009_std.npz')          
 do_A=do_cal['do_A']
 gt_EY_do_A=do_cal['gt_EY_do_A']
 
