@@ -13,7 +13,7 @@ Results are compressed and saved at the same directory/path as the main.py.
 
 
 # Acknowledgments
-The initial implementation of the code based on step by step calculation of causal effect (according to Proposition 2 of paper) was slow in estimating causal effect from large samples n>1000. Thanks to Liyuan Xu, we have improved implementation by replacing the final step of calculating alpha by the function utils.stage2_weights (nice trick! thank you Liyuan @liyuan9988). You can see Liyuan full code at https://github.com/liyuan9988/DeepFeatureProxyVariable
+The initial implementation of KPV based on step by step calculation of causal effect (according to Proposition 2 of paper) was slow in estimating causal effect from large samples n>1000. Thanks to [Liyuan Xu](https://www.ly9988.work), we have improved implementation by replacing the final step of calculating alpha by the function utils.stage2_weights from his repo on DeepFeatureIV (nice trick! [Liyuan](https://www.ly9988.work)). 
 
 
 
