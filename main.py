@@ -1,7 +1,5 @@
 import os,sys,datetime
 import time
-from pathlib import Path
-from typing import Dict, Any, Iterator, Tuple
 import numpy as np 
 import pandas as pd
 import operator
@@ -20,12 +18,10 @@ import jax.scipy.linalg as jsla
 from scipy.stats import binned_statistic
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import inspect
 import glob
 import time
-
 
 
 
@@ -38,18 +34,9 @@ seed2=240650
 seed3=35400
 seed4=1872304
 num_var=6
-sd_lst= [5949, 7422, 4388, 2807, 5654, 5518, 1816, 1102, 9886, 1656, 4379,
-       2029, 8455, 4987, 4259, 2533, 9783, 7987, 1009, 2297] #np.random.choice(10000,20)
+sd_lst= [1009,1102,1656]#5949, 7422, 4388, 2807, 5654, 5518, 1816, 1102, 9886, 1656, 4379,2029, 8455, 4987, 4259, 2533, 9783, 7987, 1009, 2297] 
 
-'''
-key1 = random.PRNGKey(seed1)
-key1, *subkeys1 = random.split(key1, num_var+1)
 
-# extra terms for ACE
-key2 = random.PRNGKey(seed2)
-key2, *subkeys2 = random.split(key2, num_var+1+2*5)
-
-'''
 # verbos 200
 key3 = random.PRNGKey(seed3)
 key3, *subkeys3 = random.split(key3, 2)
@@ -62,46 +49,22 @@ key4, *subkeys4 = random.split(key4, 1000*num_var)
 
 ewh_dict={}
 
-# the true call effect is a data dictionary with keys: level of causal (a) and values: True y(a)
-do_cal=np.load('True_causal_effect')
 
 
-# all files containing observed samples from observed variables. 
-# training (training the KPV) and test (estimating causal effect using alpha estimated at training stage) are generated and labelled separetly
-for f in glob.glob('all_data_dictionaries_files.npz'):
+
+do_cal=np.load('/Users/afsaneh/Downloads/True_Caual_Effect.npz')
+
+# if x={}: keep_x=False, otherwise keep_x=True
+keep_x=True
+        
+# if variables need to be standardised (to make sure the average of y=f(x)=0 isin RKHS
+preprocess_var=True
+       
+for f in glob.glob('/Users/afsaneh/Downloads/Data_Sample/*.npz'):
+
         data = np.load(f)    
-        data_dict={}
-        for i in data.files:
-            data_dict[i]= data[i]
         
-        lst_train= ['train_y', 'train_a',  'train_z', 'train_w', 'train_u']
-        lst_test= ['test_y', 'test_a',  'test_z', 'test_w', 'test_u']
-        
-        train =[]
-        test= []
-        
-        for i in  data_dict.keys():
-            if i in lst_train:             
-                    for k in range(data_dict[i].shape[1]):
-                        train.append(data_dict[i][:,k])
-            if i in lst_test:             
-                    for k in range(data_dict[i].shape[1]):
-                        test.append(data_dict[i][:,k])
-     
-        
-        
-        
-
-        
-        
-        # if x={}: keep_x=False, otherwise keep_x=True
-        keep_x=False
-        
-        # if variables need to be standardised (to make sure the average of y=f(x)=0 isin RKHS
-        preprocess_var=True
-        
-
-        
+         
         def range_var(arr):
                try:
                    ran_var=arr.shape[1]
@@ -123,7 +86,7 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
         def x_inclusion(data, keep_x=True):   ## Is X included in the model ?
             if keep_x:
                 try: 
-                    X = data['train_x']
+                    X = data['train_x']#[:n] #ndarray
                     X2= data['test_x']
                     lst_x =  create_lst('X', range_var(X))
                 except KeyError:
@@ -169,6 +132,7 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
         
         do_A=do_cal['do_A']
         gt_EY_do_A=do_cal['gt_EY_do_A']
+        #plt.scatter(do_A,gt_EY_do_A),plt.scatter(A,Y)
         
         
                 
@@ -184,23 +148,24 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
         if preprocess_var:
             O_train_val, Std_Scale=standardise(O_train_val)
             O_test=standardise(O_test)[0]
-            do_A_s = (do_A-A.mean())/A.std() 
+            do_A_s = (do_A-A.mean())/A.std()
             
-          
+            
+         
         n_test=O_test.shape[0]
         n_val=int(O_test.shape[0])
 
- 
-
         
-        samp_size=[1000]
+        
+        samp_size=[500]#[1000,2000,3000]
         c=-1
         results={}
-        scale_max=1.5
-        scale_min=1.5
         
-        l_yw_min=.01
-        l_w_min=.001
+        scale_max=1.5
+        scale_min=.5
+        
+        l_yw_min=.001
+        l_w_min=.0001
         optimise_l_yw=False
         optimise_l_w=True
         
@@ -214,8 +179,8 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
                     c=c+1
                     n_train=samp_size[num] 
 
-                    m1_train=n_train#int(n_train*0.4)## I have to change it back to 50%
-                    m2_train=n_train#-m1_train
+                    m1_train=n_train#int(n_train*0.4)## change it to any ratio of training 
+                    m2_train=n_train#-m1_train ## based on above
                     
                      
                     
@@ -225,6 +190,18 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
                     O_test_df=pd.DataFrame(O_test).sample(n_val, random_state=key)
                     O_test_df.columns=lst_O
                     
+
+                    # for pairplot
+                    
+                    '''
+                    sns.pairplot(O_train_val_df)        
+                    plt.savefig('Pairplot_uniform_normal_seed'+str(sd)+'_Size'+str(samp_size[num])+'_scale'+str(scale_max)+'.png')
+                    plt.show()
+                    plt.close()
+            
+                    '''
+                
+                    'val,samp1,samp2= sample_split(key, data=O_train_val, n_val=n_val,n_trn=m1_train, n_total=O_train_val.shape[0])'
 
                     train_sample, val_samp=O_train_val_df, O_test_df
                         
@@ -238,6 +215,7 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
                                                    lst_z=lst_z,lst_w=lst_w, lst_y=lst_y, scale_mx=scale_max,
                                                    scale_mn=scale_min,int_lst=int_lst,optimise_l_yw=optimise_l_yw, optimise_l_w=optimise_l_w, l_yw_min=l_yw_min,l_w_min=l_w_min)
                  
+                    
                     
                     Ew_h=[]
                     sampl_w=val_samp[lst_w]
@@ -262,14 +240,14 @@ for f in glob.glob('all_data_dictionaries_files.npz'):
                     plt.title("l= {l}, MAE_c={b:.3f}".format(l=lambda_dict, b=mse_c))
                     plt.legend(loc='upper left');
                     
-                    plt.savefig('IM_seed'+str(f[-7:])+'_Size'+str(samp_size[num])+'_scale'+str(scale_max)+'.png')#+str(c)+'.png')
+                    plt.savefig('seed'+str(f[-12:-8])+'_Size'+str(samp_size[num])+'_scale'+str(scale_max)+'.png')
                     plt.show()
                     plt.close()
                     
-                   
+                    print (f[12:-8],lambda_dict,mse_c)
                     
-                    ewh_dict[f,samp_size[num]]=Ew_Haw
+                    ewh_dict[f[12:-8],samp_size[num]]=Ew_Haw
        
         
         
-pickle.dump(ewh_dict,open('results_{f}_size{size}_{date}.p'.format(f,size, date=time.strftime("%Y%m%d_%H%M")),'wb'))    
+pickle.dump(ewh_dict,open('results_size{size}_{date}.p'.format(sb=f[-12:-8],  size=samp_size[num] , date=time.strftime("%Y%m%d_%H%M")),'wb'))       
